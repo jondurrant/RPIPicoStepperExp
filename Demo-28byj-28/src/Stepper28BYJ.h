@@ -16,12 +16,15 @@
 #include "queue.h"
 
 #include "Agent.h"
+#include "GPIOObserver.h"
+#include "GPIOInputMgr.h"
+#include "StepperObserver.h"
 
 #define DELAY 2
 #define STEPPER_QUEUE_LEN 10
 #define STEPS28BYJ 2048
 
-class Stepper28BYJ : public Agent {
+class Stepper28BYJ : public Agent, public GPIOObserver {
 public:
 	/***
 	 * Constructor
@@ -29,8 +32,9 @@ public:
 	 * @param gp2 - GPIO Pad
 	 * @param gp3 - GPIO Pad
 	 * @param gp4 - GPIO Pad
+	 * @param slotGP - GPIO Pad for slot detector
 	 */
-	Stepper28BYJ(uint8_t gp1, uint8_t gp2, uint8_t gp3, uint8_t gp4 );
+	Stepper28BYJ(uint8_t gp1, uint8_t gp2, uint8_t gp3, uint8_t gp4, uint8_t slotGP );
 	virtual ~Stepper28BYJ();
 
 	/***
@@ -40,7 +44,36 @@ public:
 	 * @param rpm - Revolutions per mininute (under 14 to work)
 	 * RPM 0 is maximum speed
 	 */
-	void step(int16_t step, int16_t rpm);
+	uint32_t step(int16_t step, int16_t rpm);
+
+
+	/***
+	 * Calibrate the disk and leave at possition zero
+	 */
+	uint32_t calibrate();
+
+	/***
+	 * Step to a possition
+	 * @param pos = Possition between 0 and 4047
+	 * @param rpm - speed, 0 to 14. 0 is max speed
+	 * @param cw - clockwise
+	 */
+	uint32_t stepTo(int16_t pos, int16_t rpm, bool cw);
+
+
+	/***
+	 * handle GPIO  events
+	 * @param gpio - GPIO number
+	 * @param events - Event
+	 */
+	virtual void handleGPIO(uint gpio, uint32_t events);
+
+
+	/***
+	 * Set Observer
+	 * @param obs
+	 */
+	void setObserver(StepperObserver *obs);
 
 protected:
 
@@ -65,7 +98,7 @@ private:
 	/***
 	 * Process request from the queue
 	 */
-	void processQueue();
+	uint32_t processQueue();
 
 	/***
 	 * Calculate the pos of stepper based on modulus maths
@@ -90,6 +123,11 @@ private:
 	int16_t xPos = 0;
 	uint16_t xDelay[4] = {2,2,2,2};
 	bool xClockwise = true;
+
+	uint8_t xSlotGP;
+
+	StepperObserver *pObserver = NULL;
+	uint32_t xNextId = 1;
 };
 
 #endif /* FREERTOS_28BYJ_48_SRC_STEPPER28BYJ_H_ */

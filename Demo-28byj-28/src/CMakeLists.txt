@@ -3,6 +3,10 @@ add_executable(${NAME}
         Agent.cpp
         BlinkAgent.cpp
         Stepper28BYJ.cpp
+        GPIOInputMgr.cpp
+        GPIOObserver.cpp
+        DemoAgent.cpp
+        StepperObserver.cpp
         )
 
 # Pull in our pico_stdlib which pulls in commonly used features
@@ -10,6 +14,7 @@ target_link_libraries(${NAME}
 	 pico_stdlib
      FreeRTOS-Kernel-Heap4 # FreeRTOS kernel and dynamic heap
      FREERTOS_PORT
+     PicoLed
 	)
 	
 target_include_directories(${NAME} PRIVATE

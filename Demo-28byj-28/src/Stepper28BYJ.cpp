@@ -12,11 +12,13 @@
 #include <cstdio>
 
 //Structure to use for queue
-enum StepperAction {StepperStep, StepperReset};
+enum StepperAction {StepperStep, StepperTo, StepperReset};
 struct StepperReq {
 	StepperAction action;
 	int16_t steps;
 	int16_t rpm;
+	bool cw;
+	uint32_t id;
 };
 typedef struct StepperReq StepperReqT;
 
@@ -27,15 +29,20 @@ typedef struct StepperReq StepperReqT;
  * @param gp2 - GPIO Pad
  * @param gp3 - GPIO Pad
  * @param gp4 - GPIO Pad
+ * @param slotGP - GPIO Pad for slot detector
  */
-Stepper28BYJ::Stepper28BYJ(uint8_t gp1,
-		  uint8_t gp2,
-		  uint8_t gp3,
-		  uint8_t gp4 ) {
+Stepper28BYJ::Stepper28BYJ(
+		uint8_t gp1,
+		uint8_t gp2,
+		uint8_t gp3,
+		uint8_t gp4,
+		uint8_t slotGP ){
 	pGPPAD[0] = gp1;
 	pGPPAD[1] = gp2;
 	pGPPAD[2] = gp3;
 	pGPPAD[3] = gp4;
+
+	xSlotGP = slotGP;
 
 	xCmdQ = xQueueCreate( STEPPER_QUEUE_LEN, sizeof(StepperReqT));
 	if (xCmdQ == NULL){
@@ -70,6 +77,10 @@ void Stepper28BYJ::init(){
 		gpio_set_dir(pGPPAD[i], GPIO_OUT);
 		gpio_put(pGPPAD[i], 0);
 	}
+
+	gpio_init(xSlotGP);
+	gpio_set_dir(xSlotGP, GPIO_OUT);
+	GPIOInputMgr::getMgr()->addObserver(xSlotGP, this);
 }
 
 /***
@@ -81,13 +92,26 @@ void Stepper28BYJ::run(){
 
 	uint8_t sequence[4] = {3, 6, 12, 9};
 	uint8_t s;
+	uint32_t id = 0;
 
 	for(;;) {
-		if (xPos == xTargetPos){
-			processQueue();
+		uint32_t r = ulTaskNotifyTake(pdTRUE, 0);
+		if (r > 0) {
+			printf("Reset Pos at %d\n", xPos);
+			xPos = 0;
 		}
 
-		if (xPos != xTargetPos){
+
+		if (xPos == xTargetPos){
+			if (id != 0){
+				if (pObserver != NULL){
+					pObserver->actionComplete(id);
+				}
+			}
+			id = processQueue();
+		}
+
+		if ((id != 0) && (xPos != xTargetPos)){
 
 			if (xClockwise){
 				xPos = modPos(xPos + 1);
@@ -118,12 +142,13 @@ void Stepper28BYJ::run(){
  * @param rpm - Revolutions per mininute (under 14 to work)
  * RPM 0 is maximum speed
  */
-void Stepper28BYJ::step(int16_t step, int16_t rpm){
+uint32_t Stepper28BYJ::step(int16_t step, int16_t rpm){
 	StepperReqT req;
 
 	req.action = StepperStep;
 	req.steps = step;
 	req.rpm = rpm;
+	req.id = xNextId++;
 
 	if (xCmdQ != NULL){
 		BaseType_t res = xQueueSendToBack(xCmdQ, (void *)&req, 0);
@@ -131,18 +156,19 @@ void Stepper28BYJ::step(int16_t step, int16_t rpm){
 			printf("WARNING: Queue is full\n");
 		}
 	}
+	return req.id;
 }
 
 
 /***
  * Process request from the queue
  */
-void Stepper28BYJ::processQueue(){
+uint32_t Stepper28BYJ::processQueue(){
 	StepperReqT req;
 	float delay;
 
 	if (xCmdQ == NULL){
-		return;
+		return 0;
 	}
 
 	BaseType_t res = xQueueReceive(xCmdQ, (void *)&req, 0);
@@ -159,6 +185,10 @@ void Stepper28BYJ::processQueue(){
 			setDelay(req.rpm);
 
 			break;
+		case StepperTo:
+			xTargetPos = req.steps;
+			xClockwise = req.cw;
+			setDelay(req.rpm);
 		default:
 			break;
 		}
@@ -167,8 +197,11 @@ void Stepper28BYJ::processQueue(){
 		} else {
 			printf("Start CCW ");
 		}
-		printf("%d at %d\n", req.steps, req.rpm);
+		printf("%d at %d. From %d to possition %d\n", req.steps, req.rpm, xPos, xTargetPos);
+
+		return req.id;
 	}
+	return 0;
 }
 
 /***
@@ -226,3 +259,62 @@ void Stepper28BYJ::setDelay(int16_t rpm){
 
 }
 
+/***
+ * handle GPIO  events
+ * @param gpio - GPIO number
+ * @param events - Event
+ */
+void Stepper28BYJ::handleGPIO(uint gpio, uint32_t events){
+
+	if (gpio == xSlotGP){
+		if ((events & GPIO_IRQ_EDGE_RISE) > 0){
+			//printf("Reset Pos at %d\n", xPos);
+			xTaskNotifyGive(getTask());
+		}
+	}
+}
+
+
+/***
+ * Calibrate the disk and leave at possition zero
+ */
+uint32_t Stepper28BYJ::calibrate(){
+	step(STEPS28BYJ /2 + 10, 0);
+	step(STEPS28BYJ /2 + 10, 0);
+	return stepTo(0, 0, false);
+}
+
+/***
+ * Step to a possition
+ * @param pos = Possition between 0 and 4047
+ * @param rpm - speed, 0 to 14. 0 is max speed
+ * @param cw - clockwise
+ */
+uint32_t Stepper28BYJ::stepTo(int16_t pos, int16_t rpm, bool cw){
+	StepperReqT req;
+
+	req.action = StepperTo;
+	req.steps = pos;
+	req.rpm = rpm;
+	req.cw = cw;
+	req.id = xNextId++;
+
+	if (xCmdQ != NULL){
+		BaseType_t res = xQueueSendToBack(xCmdQ, (void *)&req, 0);
+		if (res != pdTRUE){
+			printf("WARNING: Queue is full\n");
+		}
+	}
+
+	return req.id;
+}
+
+
+
+/***
+ * Set Observer
+ * @param obs
+ */
+void Stepper28BYJ::setObserver(StepperObserver *obs){
+	pObserver = obs;
+}

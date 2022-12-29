@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.12)
 # Change your executable name to something creative!
 set(NAME FreeRTOS28BYJ) # <-- Name your project/executable here!
 
+set(PICO_CXX_ENABLE_EXCEPTIONS 1)
+set(PICO_CXX_ENABLE_RTTI 1)
+
 set(PICO_BOARD pico_w)
 
 include(pico_sdk_import.cmake)
@@ -20,6 +23,8 @@ SET(FREERTOS_KERNEL_PATH "${CMAKE_CURRENT_LIST_DIR}/../lib/FreeRTOS-Kernel" CACH
 SET(FREERTOS_CONFIG_FILE_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/port/FreeRTOS-Kernel" CACHE STRING "Local Config")
 include_directories("${FREERTOS_CONFIG_FILE_DIRECTORY}") 
 include(FreeRTOS_Kernel_import.cmake)
+
+include("${CMAKE_CURRENT_LIST_DIR}/../lib/PicoLED/PicoLed.cmake")
 
 add_subdirectory(src)
 

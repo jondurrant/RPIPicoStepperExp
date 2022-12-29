@@ -18,10 +18,13 @@
 #include <stdio.h>
 
 
+
 #include "BlinkAgent.h"
 #include "Stepper28BYJ.h"
+#include "DemoAgent.h"
 
 #define PULSE_LED 0
+#define LEDS_PIN 6
 
 
 
@@ -102,48 +105,16 @@ void main_task(void *params){
 	blink.start("Blink", TASK_PRIORITY);
 
 	// Construct stepper and start
-	Stepper28BYJ stepper(2,3,4,5);
+	Stepper28BYJ stepper(2,3,4,5, 1);
 	stepper.start("Stepper", TASK_PRIORITY);
 
-	// Do 360 rotation test which should take approx 4 seconds
-	printf("Req CW 360 at MAX \n");
-	stepper.step(2047, 0);
-	vTaskDelay( pdMS_TO_TICKS(5000));
+	DemoAgent demo(LEDS_PIN, &stepper);
+	demo.start("Demo", TASK_PRIORITY);
 
 
-	// Loop through set of movements at different speeds
-	uint16_t seq = 0;
     while(true) {
 
     	runTimeStats();
-
-    	switch(seq % 3){
-    	case 0:
-    		rpm = 7;
-    		break;
-    	case 1:
-    		rpm = 10;
-    		break;
-    	default:
-    		rpm = 14;
-    	}
-
-
-
-    	if (seq < 8){
-    		printf("Req CW 1/8 at %d \n", rpm);
-    		stepper.step(2048/8, rpm);;
-    	}
-    	if (seq >= 8) {
-    		printf("Req CCW 1/8 at %d \n", rpm);
-    		stepper.step(2048/-8, rpm);
-    	}
-    	seq++;
-    	if (seq > 15){
-    		seq =0;
-    	}
-
-
 
         vTaskDelay(3000);
 
