@@ -22,7 +22,8 @@ int main() {
 
 	uint8_t sequence[4] = {3, 6, 12, 9};
 
-	uint8_t halfSeq[8] = {3, 2, 6, 4, 12, 8, 9, 1};
+
+	uint8_t halfSeq[8] = {3, 7, 6, 15, 12, 13, 9, 11  };
 
 	uint8_t s;
 
@@ -43,10 +44,9 @@ int main() {
 
 
 	for(;;) {
-		for (uint8_t i=0; i < 4; i++){
+		for (uint8_t i=0; i < 8; i++){
 
-			s = sequence[i];
-
+			s = halfSeq[i]; //sequence[i];
 			for (uint8_t b = 0; b < 4; b++){
 				uint8_t m = 1 << b;
 				if ((m & s) > 0){
