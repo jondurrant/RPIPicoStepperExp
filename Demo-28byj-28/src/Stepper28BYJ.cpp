@@ -118,8 +118,8 @@ void Stepper28BYJ::run(){
 			} else {
 				xPos = modPos(xPos - 1);
 			}
-			s = sequence[xPos % 4];
-			for (uint8_t b = 0; b < 4; b++){
+			s = sequence[xPos % STEPPER_SEQ_LEN];
+			for (uint8_t b = 0; b < STEPPER_SEQ_LEN; b++){
 				uint8_t m = 1 << b;
 				if ((m & s) > 0){
 					gpio_put(pGPPAD[b], 1);
@@ -225,7 +225,7 @@ void Stepper28BYJ::setDelay(int16_t rpm){
 	float delay;
 
 	if (rpm < 1){
-		for (uint8_t i=0; i < 4; i++){
+		for (uint8_t i=0; i < STEPPER_SEQ_LEN; i++){
 			xDelay[i] = DELAY;
 		}
 		return;
@@ -233,11 +233,11 @@ void Stepper28BYJ::setDelay(int16_t rpm){
 
 	delay = (60000.0 / (float)(rpm)) / (float)STEPS28BYJ;
 
-	for (uint8_t i=0; i < 4; i++){
+	for (uint8_t i=0; i < STEPPER_SEQ_LEN; i++){
 		xDelay[i] = delay;
 	}
 
-	uint16_t e = (delay * 4.0) - xDelay[0]*4;
+	uint16_t e = (delay * (float)STEPPER_SEQ_LEN) - xDelay[0]*STEPPER_SEQ_LEN;
 	switch(e){
 	case 1:
 		xDelay[1]++;

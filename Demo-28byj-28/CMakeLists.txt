@@ -6,7 +6,7 @@ set(NAME FreeRTOS28BYJ) # <-- Name your project/executable here!
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 set(PICO_CXX_ENABLE_RTTI 1)
 
-set(PICO_BOARD pico_w)
+#set(PICO_BOARD pico_w)
 
 include(pico_sdk_import.cmake)
 

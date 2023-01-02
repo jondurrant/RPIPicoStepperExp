@@ -46,7 +46,7 @@ void DemoAgent::run(){
 	auto ledStrip = PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, xGP, LEDS_LENGTH, PicoLed::FORMAT_GRB);
 
 	// Keep brightness low as using 3.3v
-	ledStrip.setBrightness(64);
+	ledStrip.setBrightness(10);
 	ledStrip.fill( PicoLed::RGB(10, 10, 0xff) );
 	ledStrip.setPixelColor((end + 1) % 12, PicoLed::RGB(0, 0xFF, 0));
 	ledStrip.show();

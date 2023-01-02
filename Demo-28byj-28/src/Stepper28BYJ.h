@@ -23,6 +23,7 @@
 #define DELAY 2
 #define STEPPER_QUEUE_LEN 10
 #define STEPS28BYJ 2048
+#define STEPPER_SEQ_LEN 4
 
 class Stepper28BYJ : public Agent, public GPIOObserver {
 public:
@@ -121,7 +122,7 @@ private:
 
 	int16_t xTargetPos = 0;
 	int16_t xPos = 0;
-	uint16_t xDelay[4] = {2,2,2,2};
+	uint16_t xDelay[STEPPER_SEQ_LEN];
 	bool xClockwise = true;
 
 	uint8_t xSlotGP;

@@ -44,9 +44,9 @@ int main() {
 
 
 	for(;;) {
-		for (uint8_t i=0; i < 8; i++){
+		for (uint8_t i=0; i < 4; i++){
 
-			s = halfSeq[i]; //sequence[i];
+			s = sequence[i];
 			for (uint8_t b = 0; b < 4; b++){
 				uint8_t m = 1 << b;
 				if ((m & s) > 0){
