@@ -8,8 +8,7 @@
  *
  */
 
-#include <stdio.h>
-#include <stdio.h>
+#include <iostream>
 
 #include "pico/stdlib.h"
 #include "FreeRTOS.h"
@@ -17,6 +16,8 @@
 #include "queue.h"
 #include "BlinkAgent.h"
 #include "Stepper28BYJ.h"
+
+const auto RTOS_NAME = "FreeRTOS";
 
 #define PULSE_LED 0
 #define TASK_PRIORITY (tskIDLE_PRIORITY + 1UL)
@@ -37,7 +38,7 @@ void runTimeStats()
   /* Take a snapshot of the number of tasks in case it changes while this
   function is executing. */
   uxArraySize = uxTaskGetNumberOfTasks();
-  printf("Number of tasks %d\n", uxArraySize);
+  std::cout << "Number of tasks " << uxArraySize << std::endl;
 
   /* Allocate a TaskStatus_t structure for each task.  An array could be
   allocated statically at compile time. */
@@ -56,14 +57,13 @@ void runTimeStats()
     format the raw data as human readable ASCII data. */
     for (x = 0; x < uxArraySize; x++)
     {
-      printf(
-        "Task: %d \t cPri:%d \t bPri:%d \t hw:%d \t%s\n",
-        pxTaskStatusArray[x].xTaskNumber,
-        pxTaskStatusArray[x].uxCurrentPriority,
-        pxTaskStatusArray[x].uxBasePriority,
-        pxTaskStatusArray[x].usStackHighWaterMark,
-        pxTaskStatusArray[x].pcTaskName
-      );
+      std::cout
+        << "Task: " << pxTaskStatusArray[x].xTaskNumber
+        << " cPri:" << pxTaskStatusArray[x].uxCurrentPriority
+        << " bPri:" << pxTaskStatusArray[x].uxBasePriority
+        << " hw:" << pxTaskStatusArray[x].usStackHighWaterMark
+        << " " << pxTaskStatusArray[x].pcTaskName
+        << std::endl;
     }
 
     /* The array is no longer needed, free the memory it consumes. */
@@ -71,18 +71,17 @@ void runTimeStats()
   }
   else
   {
-    printf("Failed to allocate space for stats\n");
+    std::cerr << "Failed to allocate space for stats" << std::endl;
   }
 
   HeapStats_t heapStats;
   vPortGetHeapStats(&heapStats);
-  printf(
-    "HEAP avl: %d, blocks %d, alloc: %d, free: %d\n",
-    heapStats.xAvailableHeapSpaceInBytes,
-    heapStats.xNumberOfFreeBlocks,
-    heapStats.xNumberOfSuccessfulAllocations,
-    heapStats.xNumberOfSuccessfulFrees
-  );
+  std::cout
+    << "HEAP avl: " << heapStats.xAvailableHeapSpaceInBytes
+    << ", blocks " << heapStats.xNumberOfFreeBlocks
+    << ", alloc: " << heapStats.xNumberOfSuccessfulAllocations
+    << ", free: " << heapStats.xNumberOfSuccessfulFrees
+    << std::endl;
 }
 
 /***
@@ -93,7 +92,7 @@ void main_task(void* params)
 {
   int16_t rpm;
 
-  printf("Main task started\n");
+  std::cout << "Main task started" << std::endl;
 
   //Start up pulse blink LED
   BlinkAgent blink(PULSE_LED);
@@ -104,7 +103,7 @@ void main_task(void* params)
   stepper.start("Stepper", TASK_PRIORITY);
 
   // Do 360 rotation test which should take approx 4 seconds
-  printf("Req CW 360 at MAX \n");
+  std::cout << "Req CW 360 at MAX" << std::endl;
   stepper.step(2047, 0);
   vTaskDelay(pdMS_TO_TICKS(5000));
 
@@ -129,13 +128,13 @@ void main_task(void* params)
 
     if (seq < 8)
     {
-      printf("Req CW 1/8 at %d \n", rpm);
+      std::cout << "Req CW 1/8 at " << rpm << std::endl;
       stepper.step(2048 / 8, rpm);;
     }
 
     if (seq >= 8)
     {
-      printf("Req CCW 1/8 at %d \n", rpm);
+      std::cout << "Req CCW 1/8 at " << rpm << std::endl;
       stepper.step(2048 / -8, rpm);
     }
 
@@ -179,12 +178,10 @@ int main(void)
 {
   stdio_init_all();
   sleep_ms(2000);
-  printf("GO\n");
+  std::cout << "Starting" << std::endl;
 
   /* Configure the hardware ready to run the demo. */
-  const char* rtos_name;
-  rtos_name = "FreeRTOS";
-  printf("Starting %s on core 0:\n", rtos_name);
+  std::cout << "Starting " << RTOS_NAME << " on core 0:" << std::endl;
   vLaunch();
 
   return 0;
