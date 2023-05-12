@@ -6,7 +6,7 @@
 
 #include "pico/stdlib.h"
 
-#define DELAY 2
+#define DELAY 4 //2
 
 #define LED 0
 
@@ -18,7 +18,8 @@ int main() {
 
 	bool on = false;
 
-	uint8_t stepPads[4] = {2,3,4,5};
+	//uint8_t stepPads[4] = {2,3,4,5};
+	uint8_t stepPads[4] = {18,19,20,21};
 
 	uint8_t sequence[4] = {3, 6, 12, 9};
 

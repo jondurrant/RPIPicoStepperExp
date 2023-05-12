@@ -15,7 +15,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
-#include <stdio.h>
 
 
 #include "BlinkAgent.h"
@@ -25,7 +24,7 @@
 
 
 
-#define TASK_PRIORITY			( tskIDLE_PRIORITY + 1UL )
+#define TASK_PRIORITY ( tskIDLE_PRIORITY + 1UL )
 
 
 /***
